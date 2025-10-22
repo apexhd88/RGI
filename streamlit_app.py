@@ -16,7 +16,7 @@ from reportlab.lib.enums import TA_LEFT
 
 # --- Global Constants & Configuration ---
 LOCATION_ORDER = ["Heat", "Cold Room", "Powder",
-                  "Tower", "Pour drum", "Production", "Warehouse"]
+                  "Kardex", "Pour drum", "Production", "Warehouse"]
 FONT_NORMAL = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 ALLERGEN_COLOR = colors.lightblue
@@ -72,7 +72,7 @@ def preprocess_location_map(uploaded_map_file):
         elif code.startswith('CR'):
             sub_type = "Cold Room"
         elif code.startswith(('KXFL', 'KXFR')):
-            sub_type = "Tower"
+            sub_type = "Kardex"
         elif code.startswith(('PFL-CP', 'PFR-CP')):
             sub_type = "Pour drum"
         elif code.startswith(('PFL', 'PFR')):
@@ -99,12 +99,12 @@ def preprocess_location_map(uploaded_map_file):
     return df_map
 
 
-def classify_location(base_type, qty_required, max_tower_qty, max_pour_drum_qty):
+def classify_location(base_type, qty_required, max_Kardex_qty, max_pour_drum_qty):
     """
     Refines the base location type based on quantity limits.
     """
-    if base_type == "Tower" and qty_required >= max_tower_qty:
-        return "Tower overweight"
+    if base_type == "Kardex" and qty_required >= max_Kardex_qty:
+        return "Kardex overweight"
     if base_type == "Pour drum" and qty_required >= max_pour_drum_qty:
         return "Pour drum overweight"
     return base_type
@@ -142,7 +142,7 @@ def format_output_df(df_priority):
             }
             formatted_rows.append(header_row)
 
-            if location in ["Tower", "Pour drum", "Powder"]:
+            if location in ["Kardex", "Pour drum", "Powder"]:
                 subset['sort_key'] = subset['Location Description'].apply(
                     natural_sort_key)
                 subset = subset.sort_values(
@@ -181,7 +181,7 @@ def format_output_df(df_priority):
     return df_output
 
 
-def process_data(df, location_map, max_tower_qty, max_pour_drum_qty):
+def process_data(df, location_map, max_Kardex_qty, max_pour_drum_qty):
 
     debug_data = {}
 
@@ -242,8 +242,8 @@ def process_data(df, location_map, max_tower_qty, max_pour_drum_qty):
     def refine_location_subtype(row):
         subtype = row['Location SubType']
         qty_required = row['Quantity required']
-        if subtype == "Tower" and qty_required >= max_tower_qty:
-            return "Tower overweight"
+        if subtype == "Kardex" and qty_required >= max_Kardex_qty:
+            return "Kardex overweight"
         if subtype == "Pour drum" and qty_required >= max_pour_drum_qty:
             return "Pour drum overweight"
         return subtype
@@ -259,7 +259,7 @@ def process_data(df, location_map, max_tower_qty, max_pour_drum_qty):
         conditions, ['Expired', 'Expiring Soon'], default='OK')
 
     priority_map = {loc: i + 1 for i, loc in enumerate(LOCATION_ORDER)}
-    priority_map.update({'Powder (PW)': 3.1, 'Powder': 3.2, 'Tower overweight': 8,
+    priority_map.update({'Powder (PW)': 3.1, 'Powder': 3.2, 'Kardex overweight': 8,
                         'Pour drum overweight': 8, 'Unknown': 99})  # Add Unknown with lowest priority
 
     df_processed["Location Priority"] = df_processed["Final SubType"].map(
@@ -502,8 +502,8 @@ with col2:
 st.sidebar.header("Step 2: Configure PDF Output")
 st.sidebar.markdown("---")
 st.sidebar.write("Set Quantity Limits:")
-max_tower_qty = st.sidebar.number_input(
-    "Max Qty for Tower:", value=2.0, step=0.1, format="%.3f")
+max_Kardex_qty = st.sidebar.number_input(
+    "Max Qty for Kardex:", value=2.0, step=0.1, format="%.3f")
 max_pour_drum_qty = st.sidebar.number_input(
     "Max Qty for Pour drum:", value=20.0, step=1.0, format="%.2f")
 st.sidebar.markdown("---")
@@ -532,7 +532,7 @@ else:
 
 st.sidebar.markdown("---")
 barcode_locations_selection = st.sidebar.multiselect(
-    "Generate barcodes for which locations?", LOCATION_ORDER, default=["Tower"])
+    "Generate barcodes for which locations?", LOCATION_ORDER, default=["Kardex"])
 st.sidebar.markdown("---")
 st.sidebar.write("Select Content to Include:")
 include_p2 = st.sidebar.checkbox("Include Second Priority", True)
@@ -562,9 +562,9 @@ if uploaded_file is not None and location_map_file is not None:
         df = pd.read_excel(xls, sheet_name=sheet_name,
                            header=header_row_index, converters=string_converters)
 
-        # debug - product_info, priority_dataframes, debug_dfs = process_data(df, location_map, max_tower_qty, max_pour_drum_qty)
+        # debug - product_info, priority_dataframes, debug_dfs = process_data(df, location_map, max_Kardex_qty, max_pour_drum_qty)
         product_info, priority_dataframes = process_data(
-            df, location_map, max_tower_qty, max_pour_drum_qty)
+            df, location_map, max_Kardex_qty, max_pour_drum_qty)
 
         st.header("Step 3: Review and Generate")
         st.subheader("Production Information")
